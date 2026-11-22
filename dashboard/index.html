@@ -4,72 +4,255 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Siems 3D Printing | Dashboard</title>
+<title>Siems 3D Printing | Admin</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080d19;color:white;font-family:Arial,sans-serif}
-main{max-width:500px;margin:100px auto;padding:25px}
-.card{background:#111c30;padding:30px;border-radius:16px;border:1px solid #263650}
-h1{font-size:27px}
-p{color:#a9b6c9}
-input,button{width:100%;padding:14px;margin-top:14px;border-radius:8px;font-size:15px}
-input{background:#080d19;border:1px solid #33445f;color:white}
-button{background:#3988ff;border:0;color:white;font-weight:bold;cursor:pointer}
+body{margin:0;background:#080d19;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px 6%;background:#101a2b;border-bottom:1px solid #263650;display:flex;justify-content:space-between;align-items:center}
+.logo{font-weight:bold;font-size:20px}
+.logo span{color:#3988ff}
+main{max-width:950px;margin:45px auto;padding:20px}
+.card{background:#111c30;border:1px solid #263650;border-radius:15px;padding:25px;margin-bottom:20px}
+h1{font-size:30px}
+h2{font-size:21px}
+p{color:#a9b6c9;line-height:1.6}
+input,textarea,button{width:100%;padding:13px;margin:8px 0;border-radius:8px;font:inherit}
+input,textarea{background:#080d19;color:white;border:1px solid #33445f}
+textarea{min-height:100px;resize:vertical}
+button{background:#3988ff;color:white;border:0;font-weight:bold;cursor:pointer}
 button:hover{background:#1769df}
+button.secondary{background:#263650}
+button.danger{background:#b83245}
 #dashboard{display:none}
-.item{padding:15px;background:#1b2a42;border-radius:9px;margin-top:12px}
-small{color:#a9b6c9}
+#message{color:#ff8b8b}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px}
+.print{background:#1b2a42;border-radius:12px;padding:15px;overflow:hidden}
+.print img{width:100%;height:150px;object-fit:cover;border-radius:8px}
+.print h3{margin-bottom:5px}
+.small{font-size:12px;color:#a9b6c9}
+@media(max-width:550px){main{margin:20px auto}header{padding:16px}}
 </style>
 </head>
 <body>
+
+<header>
+  <div class="logo">SIEMS <span>3D</span> PRINTING</div>
+  <div>ADMIN</div>
+</header>
+
 <main>
-<div class="card" id="login">
-<h1>Siems 3D Printing</h1>
-<p>Beheerdersomgeving</p>
-<form id="loginForm">
-<input id="password" type="password" placeholder="Beheerderswachtwoord" required>
-<button type="submit">Inloggen →</button>
-</form>
-<p id="error"></p>
-</div>
 
-<div id="dashboard">
-<h1>Welkom, Siem! 👋</h1>
-<p>Jouw websitebeheer</p>
-<div class="item">
-<h3>🖨️ Prints beheren</h3>
-<small>Hier komen straks jouw 3D-prints.</small>
-</div>
-<div class="item">
-<h3>📸 Foto's beheren</h3>
-<small>Hier komen straks jouw foto's.</small>
-</div>
-<div class="item">
-<h3>⚙️ Instellingen</h3>
-<small>Hier komen straks jouw website-instellingen.</small>
-</div>
-<button onclick="logout()">Uitloggen</button>
-</div>
+<section id="login" class="card">
+  <h1>Welkom, Siem! 👋</h1>
+  <p>Log in om jouw 3D-printbedrijf te beheren.</p>
+  <form id="loginForm">
+    <input id="password" type="password"
+      placeholder="Jouw beheerderswachtwoord" required>
+    <button type="submit">Inloggen →</button>
+  </form>
+  <p id="message"></p>
+</section>
+
+<section id="dashboard">
+  <div class="card">
+    <h1>Dashboard 👋</h1>
+    <p>Beheer hier jouw 3D-prints.</p>
+    <button class="secondary" id="logout">Uitloggen</button>
+  </div>
+
+  <div class="card">
+    <h2>➕ Nieuwe print toevoegen</h2>
+    <form id="printForm">
+      <label>Naam van de print</label>
+      <input id="printName" maxlength="120"
+        placeholder="Bijvoorbeeld: Telefoonhouder" required>
+
+      <label>Beschrijving</label>
+      <textarea id="printDescription" maxlength="2000"
+        placeholder="Vertel iets over deze print..." required></textarea>
+
+      <label>Foto-URL (optioneel)</label>
+      <input id="printImage" type="url"
+        placeholder="https://...">
+
+      <button type="submit">Print toevoegen</button>
+    </form>
+    <p id="formMessage"></p>
+  </div>
+
+  <div class="card">
+    <h2>🖨️ Mijn prints</h2>
+    <button class="secondary" id="refresh">Vernieuwen</button>
+    <div id="prints" class="grid"></div>
+    <p id="empty"></p>
+  </div>
+</section>
+
 </main>
-<script>
-// DEMO-INLOG: geen echte beveiliging!
-const DEMO_PASSWORD = "Admin";
 
-document.getElementById("loginForm").addEventListener("submit",function(e){
-e.preventDefault();
-if(document.getElementById("password").value===DEMO_PASSWORD){
-document.getElementById("login").style.display="none";
-document.getElementById("dashboard").style.display="block";
-}else{
-document.getElementById("error").textContent="Onjuist wachtwoord!";
+<script>
+const API = "https://siems-3d-dashboard.siemschokker.workers.dev";
+
+let token = sessionStorage.getItem("siems_session") || "";
+
+const loginSection = document.getElementById("login");
+const dashboard = document.getElementById("dashboard");
+
+function showDashboard() {
+  loginSection.style.display = "none";
+  dashboard.style.display = "block";
+  loadPrints();
 }
+
+function logout() {
+  token = "";
+  sessionStorage.removeItem("siems_session");
+  dashboard.style.display = "none";
+  loginSection.style.display = "block";
+  document.getElementById("password").value = "";
+}
+
+async function api(path, options = {}) {
+  const response = await fetch(API + path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": "Bearer " + token,
+      ...(options.headers || {})
+    }
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    if (response.status === 401) logout();
+    throw new Error(data.error || "Er is iets misgegaan.");
+  }
+
+  return data;
+}
+
+document.getElementById("loginForm").addEventListener("submit",
+async event => {
+  event.preventDefault();
+
+  const message = document.getElementById("message");
+  message.textContent = "Bezig met inloggen...";
+
+  try {
+    const response = await fetch(API + "/api/login", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        password: document.getElementById("password").value
+      })
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) throw new Error(data.error);
+
+    token = data.token;
+    sessionStorage.setItem("siems_session", token);
+    message.textContent = "";
+    showDashboard();
+
+  } catch(error) {
+    message.textContent = error.message || "Inloggen mislukt.";
+  }
 });
 
-function logout(){
-document.getElementById("dashboard").style.display="none";
-document.getElementById("login").style.display="block";
-document.getElementById("password").value="";
+async function loadPrints() {
+  const container = document.getElementById("prints");
+  const empty = document.getElementById("empty");
+
+  container.replaceChildren();
+  empty.textContent = "Prints laden...";
+
+  try {
+    const data = await api("/api/prints");
+    empty.textContent = data.prints.length ? "" : "Je hebt nog geen prints toegevoegd.";
+
+    data.prints.forEach(print => {
+      const card = document.createElement("article");
+      card.className = "print";
+
+      if (print.image) {
+        const img = document.createElement("img");
+        img.src = print.image;
+        img.alt = print.name;
+        img.loading = "lazy";
+        card.appendChild(img);
+      }
+
+      const title = document.createElement("h3");
+      title.textContent = print.name;
+      card.appendChild(title);
+
+      const description = document.createElement("p");
+      description.textContent = print.description;
+      card.appendChild(description);
+
+      const remove = document.createElement("button");
+      remove.className = "danger";
+      remove.textContent = "Verwijderen";
+      remove.addEventListener("click", () => deletePrint(print.id));
+
+      card.appendChild(remove);
+      container.appendChild(card);
+    });
+
+  } catch(error) {
+    empty.textContent = error.message;
+  }
+}
+
+document.getElementById("printForm").addEventListener("submit",
+async event => {
+  event.preventDefault();
+
+  const message = document.getElementById("formMessage");
+  message.textContent = "Print opslaan...";
+
+  try {
+    await api("/api/prints", {
+      method: "POST",
+      body: JSON.stringify({
+        name: document.getElementById("printName").value,
+        description: document.getElementById("printDescription").value,
+        image: document.getElementById("printImage").value
+      })
+    });
+
+    event.target.reset();
+    message.textContent = "Print succesvol toegevoegd! 🎉";
+    await loadPrints();
+
+  } catch(error) {
+    message.textContent = error.message;
+  }
+});
+
+async function deletePrint(id) {
+  if (!confirm("Weet je zeker dat je deze print wilt verwijderen?")) return;
+
+  try {
+    await api("/api/prints/" + encodeURIComponent(id), {
+      method: "DELETE"
+    });
+    await loadPrints();
+  } catch(error) {
+    alert(error.message);
+  }
+}
+
+document.getElementById("refresh").addEventListener("click", loadPrints);
+document.getElementById("logout").addEventListener("click", logout);
+
+if (token) {
+  showDashboard();
 }
 </script>
+
 </body>
 </html>
