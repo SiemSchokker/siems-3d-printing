@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Siems 3D Printing | Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#080d19;color:white;font-family:Arial,sans-serif}
+main{max-width:500px;margin:100px auto;padding:25px}
+.card{background:#111c30;padding:30px;border-radius:16px;border:1px solid #263650}
+h1{font-size:27px}
+p{color:#a9b6c9}
+input,button{width:100%;padding:14px;margin-top:14px;border-radius:8px;font-size:15px}
+input{background:#080d19;border:1px solid #33445f;color:white}
+button{background:#3988ff;border:0;color:white;font-weight:bold;cursor:pointer}
+button:hover{background:#1769df}
+#dashboard{display:none}
+.item{padding:15px;background:#1b2a42;border-radius:9px;margin-top:12px}
+small{color:#a9b6c9}
+</style>
+</head>
+<body>
+<main>
+<div class="card" id="login">
+<h1>Siems 3D Printing</h1>
+<p>Beheerdersomgeving</p>
+<form id="loginForm">
+<input id="password" type="password" placeholder="Beheerderswachtwoord" required>
+<button type="submit">Inloggen →</button>
+</form>
+<p id="error"></p>
+</div>
+
+<div id="dashboard">
+<h1>Welkom, Siem! 👋</h1>
+<p>Jouw websitebeheer</p>
+<div class="item">
+<h3>🖨️ Prints beheren</h3>
+<small>Hier komen straks jouw 3D-prints.</small>
+</div>
+<div class="item">
+<h3>📸 Foto's beheren</h3>
+<small>Hier komen straks jouw foto's.</small>
+</div>
+<div class="item">
+<h3>⚙️ Instellingen</h3>
+<small>Hier komen straks jouw website-instellingen.</small>
+</div>
+<button onclick="logout()">Uitloggen</button>
+</div>
+</main>
+<script>
+// DEMO-INLOG: geen echte beveiliging!
+const DEMO_PASSWORD = "Admin";
+
+document.getElementById("loginForm").addEventListener("submit",function(e){
+e.preventDefault();
+if(document.getElementById("password").value===DEMO_PASSWORD){
+document.getElementById("login").style.display="none";
+document.getElementById("dashboard").style.display="block";
+}else{
+document.getElementById("error").textContent="Onjuist wachtwoord!";
+}
+});
+
+function logout(){
+document.getElementById("dashboard").style.display="none";
+document.getElementById("login").style.display="block";
+document.getElementById("password").value="";
+}
+</script>
+</body>
+</html>
